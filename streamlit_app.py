@@ -2,9 +2,14 @@ import streamlit as st
 import jdatetime
 from dateutil.relativedelta import relativedelta
 
-st.set_page_config(layout="wide", page_title="محاسبه‌گر اختلاف تاریخ شمسی")
+# --- 1. تنظیمات صفحه باید اولین دستور Streamlit باشد ---
+st.set_page_config(
+    layout="wide",
+    page_title="محاسبه‌گر اختلاف تاریخ شمسی",
+    initial_sidebar_state="collapsed" # گزینه اختیاری: برای بستن سایدبار در ابتدا
+)
 
-# تابع اصلی محاسبه اختلاف تاریخ بدون تغییر باقی می‌ماند
+# --- 2. تعریف توابع اصلی برنامه ---
 def calculate_shamsi_date_difference(date_str1, date_str2):
     """
     دو تاریخ شمسی را به صورت رشته دریافت کرده و اختلاف آن‌ها را
@@ -29,11 +34,12 @@ def calculate_shamsi_date_difference(date_str1, date_str2):
         months = difference.months
         return years, months
     except ValueError:
-        return "خطا: فرمت تاریخ وارد شده نامعتبر است. باید 'YYYY/MM/DD' باشد."
+        return "خطا: فرمت تاریخ وارد شده نامعتبر است. لطفاً از فرمت 'YYYY/MM/DD' استفاده کنید."
     except Exception as e:
         return f"خطا در پردازش تاریخ‌ها: {e}"
 
-# --- CSS برای فونت وزیرمتن و RTL ---
+# --- 3. اعمال CSS برای فونت وزیرمتن و RTL ---
+# این دستور حالا بعد از set_page_config و تعریف توابع قرار می‌گیرد
 st.markdown("""
 <style>
     @import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
@@ -56,41 +62,48 @@ st.markdown("""
         text-align: right !important;
         opacity: 0.7; /* بهبود خوانایی placeholder */
     }
-    /* دکمه‌ها ممکن است به تنظیمات خاص‌تری برای وسط‌چین کردن متن نیاز داشته باشند اگر text-align:right ظاهر خوبی ندهد */
+    /* استایل دکمه‌ها (اختیاری، اگر متن دکمه وسط‌چین نباشد) */
     /* div.stButton > button { text-align: center !important; } */
 </style>
 """, unsafe_allow_html=True)
 
+
+# --- 4. رابط کاربری Streamlit ---
 st.title("محاسبه‌گر اختلاف دو تاریخ شمسی")
 st.markdown("این برنامه اختلاف بین دو تاریخ شمسی را بر حسب سال و ماه برای هر خط ورودی محاسبه می‌کند.")
 
 st.header("ورودی داده‌ها")
-
 st.markdown("""
 تاریخ‌ها را در کادر زیر وارد کنید. هر خط باید شامل دو تاریخ شمسی با فرمت `YYYY/MM/DD` باشد که با کاما (,) از هم جدا شده‌اند.
-مثال:1390/05/11,1399/11/12
+مثال:
+1390/05/11,1399/11/12
 1384/12/12,1388/10/22
 """)
 
-input_text = st.text_area("داده‌های تاریخ را اینجا وارد یا پیست کنید:", height=150, key="date_input_area_multiline_rtl", placeholder="مثلاً: 1370/01/01,1375/02/15")
+input_text = st.text_area(
+    "داده‌های تاریخ را اینجا وارد یا پیست کنید:",
+    height=150,
+    key="date_input_area_multiline_rtl_v2", # استفاده از کلید جدید برای جلوگیری از تداخل احتمالی
+    placeholder="مثلاً: 1370/01/01,1375/02/15\n1380/11/05,1382/01/20"
+)
 
-if st.button("محاسبه اختلاف", key="calculate_button_multiline_rtl"):
+if st.button("محاسبه اختلاف", key="calculate_button_multiline_rtl_v2"):
     if not input_text.strip():
         st.warning("لطفاً داده‌های تاریخ را وارد کنید.")
     else:
         input_lines = input_text.strip().split('\n')
         
-        simplified_output_lines = [] # لیست برای خروجی ساده شده (فقط سال و ماه)
+        simplified_output_lines = [] # لیست برای خروجی ساده شده (فقط سال و ماه برای موارد موفق)
         detailed_log_lines = []      # لیست برای گزارش کامل با جزئیات خطا
         
-        any_valid_line_processed = False # برای بررسی اینکه آیا حداقل یک خط معتبر پردازش شده یا خیر
+        any_valid_line_found_for_processing = False # برای بررسی اینکه آیا حداقل یک خط معتبر برای پردازش یافت شده یا خیر
 
         for i, line_content in enumerate(input_lines):
             original_line_for_display = line_content.strip() 
-            if not original_line_for_display: # از خطوط خالی صرف نظر کن
+            if not original_line_for_display: # از خطوط خالی در ورودی صرف نظر کن
                 continue
             
-            any_valid_line_processed = True
+            any_valid_line_found_for_processing = True
             parts = original_line_for_display.split(',')
             
             if len(parts) == 2:
@@ -101,43 +114,50 @@ if st.button("محاسبه اختلاف", key="calculate_button_multiline_rtl"):
                 if isinstance(result, tuple):
                     years_diff, months_diff = result
                     
-                    # فقط سال و ماه برای لیست ساده شده
+                    # فقط سال و ماه برای لیست ساده شده (بدون متن اضافی)
                     clean_diff_text = f"{abs(years_diff)} سال و {abs(months_diff)} ماه"
                     simplified_output_lines.append(clean_diff_text)
                     
-                    # گزارش کامل شامل جزئیات بیشتر
+                    # گزارش کامل شامل جزئیات بیشتر (از جمله نکته کوچکتر بودن تاریخ دوم)
                     full_info_diff_text = clean_diff_text
                     if years_diff < 0 or (years_diff == 0 and months_diff < 0) :
                         full_info_diff_text += " (تاریخ دوم کوچکتر از تاریخ اول است)"
                     detailed_log_lines.append(f"خط {i+1} «{original_line_for_display}»: {full_info_diff_text}")
-                else: 
+                else: # اگر تابع محاسبه خطا برگرداند
                     error_msg = f"خط {i+1} «{original_line_for_display}»: {result}"
                     detailed_log_lines.append(error_msg)
-            else: 
+            else: # اگر فرمت خط ورودی نادرست باشد
                 error_msg = f"خط {i+1} «{original_line_for_display}»: خطا در فرمت خط. باید دو تاریخ جدا شده با کاما باشد."
                 detailed_log_lines.append(error_msg)
         
-        # نمایش نتایج ساده شده
+        # نمایش نتایج ساده شده (فقط موارد موفق)
         if simplified_output_lines:
-            st.subheader("نتایج محاسبات (فقط اختلاف)")
+            st.subheader("نتایج محاسبات (فقط اختلاف سال و ماه)")
             st.markdown("---")
             final_simplified_block = "\n".join(simplified_output_lines)
             st.code(final_simplified_block, language=None)
-        elif any_valid_line_processed: # اگر خطوطی پردازش شدند اما هیچکدام موفقیت آمیز نبودند
-            st.info("هیچ نتیجه موفقیت آمیزی برای نمایش در لیست خلاصه وجود ندارد. لطفاً گزارش کامل را بررسی کنید.")
-        # اگر input_text.strip() خالی بود، هشدار اولیه قبلا نمایش داده شده است.
+        elif any_valid_line_found_for_processing: # اگر خطوطی برای پردازش وجود داشت اما هیچکدام موفقیت آمیز نبودند
+            st.info("هیچ نتیجه موفقیت آمیزی برای نمایش در لیست خلاصه وجود ندارد. لطفاً گزارش کامل را برای بررسی خطاها مشاهده کنید.")
+        # اگر input_text.strip() خالی بود، هشدار اولیه توسط اولین if کنترل شده است.
 
-        # نمایش گزارش کامل (شامل خطاها)
-        if detailed_log_lines:
+        # نمایش گزارش کامل (شامل خطاها و جزئیات موارد موفق)
+        if detailed_log_lines: # اگر چیزی برای لاگ کردن وجود داشته باشد (موفق یا ناموفق)
             st.subheader("گزارش کامل پردازش")
             st.markdown("---")
             full_log_block = "\n".join(detailed_log_lines)
             # ارتفاع text_area را می‌توان بر اساس تعداد خطوط تنظیم کرد
-            log_area_height = min(300, max(100, len(detailed_log_lines) * 23)) 
-            st.text_area("جزئیات پردازش هر خط:", full_log_block, height=log_area_height, key="detailed_log_area_rtl")
+            log_area_height = min(300, max(100, len(detailed_log_lines) * 25 + 20)) 
+            st.text_area(
+                "جزئیات پردازش هر خط:",
+                value=full_log_block, # استفاده از value برای نمایش متن اولیه
+                height=log_area_height,
+                key="detailed_log_area_rtl_v2", # کلید جدید
+                disabled=True # برای اینکه کاربر نتواند آن را ویرایش کند (اختیاری)
+            )
         
-        if not any_valid_line_processed and input_text.strip():
-             st.info("ورودی داده شد اما هیچ خط معتبری برای پردازش یافت نشد (مثلاً تمام خطوط خالی بودند).")
+        # اگر ورودی داده شده بود اما هیچ خطی (حتی خط خالی) در آن برای پردازش یافت نشد
+        if not any_valid_line_found_for_processing and input_text.strip():
+             st.info("ورودی داده شد اما هیچ خطی که قابل پردازش باشد (حتی برای نمایش خطا) یافت نشد.")
 
 
 st.markdown("---")
