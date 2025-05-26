@@ -35,56 +35,57 @@ def calculate_shamsi_date_difference(date_str1, date_str2):
 st.set_page_config(layout="wide", page_title="محاسبه‌گر اختلاف تاریخ شمسی")
 
 st.title("محاسبه‌گر اختلاف دو تاریخ شمسی")
-st.markdown("این برنامه اختلاف بین دو تاریخ شمسی را بر حسب سال و ماه محاسبه می‌کند.")
+st.markdown("این برنامه اختلاف بین دو تاریخ شمسی را بر حسب سال و ماه برای هر خط ورودی محاسبه می‌کند.")
 
 st.header("ورودی داده‌ها")
 st.markdown("""
 تاریخ‌ها را در کادر زیر وارد کنید. هر خط باید شامل دو تاریخ شمسی با فرمت `YYYY/MM/DD` باشد که با کاما (,) از هم جدا شده‌اند.
-مثال:
-1390/05/11,1399/11/12
+مثال:1390/05/11,1399/11/12
 1384/12/12,1388/10/22
 """)
 
-input_text = st.text_area("داده‌های تاریخ را اینجا وارد یا پیست کنید:", height=200, key="date_input_area")
+input_text = st.text_area("داده‌های تاریخ را اینجا وارد یا پیست کنید:", height=200, key="date_input_area_multiline")
 
-if st.button("محاسبه اختلاف", key="calculate_button"):
+if st.button("محاسبه اختلاف", key="calculate_button_multiline"):
     if not input_text.strip():
         st.warning("لطفاً داده‌های تاریخ را وارد کنید.")
     else:
         input_lines = input_text.strip().split('\n')
-        st.header("نتایج")
-        st.markdown("---")
-
-        results_to_display = []
-        for i, line in enumerate(input_lines):
-            line = line.strip()
-            if not line:
+        
+        all_results_text_lines = [] # لیستی برای نگهداری تمام خطوط نتیجه
+        
+        for i, line_content in enumerate(input_lines):
+            original_line_for_display = line_content.strip() 
+            if not original_line_for_display: # از خطوط خالی صرف نظر کن
                 continue
 
-            parts = line.split(',')
+            parts = original_line_for_display.split(',')
+            
             if len(parts) == 2:
                 date_input1 = parts[0].strip()
                 date_input2 = parts[1].strip()
+                # فراخوانی تابع محاسبه
                 result = calculate_shamsi_date_difference(date_input1, date_input2)
 
                 if isinstance(result, tuple):
                     years_diff, months_diff = result
-                    output_str = f"ورودی `{line}`: {abs(years_diff)} سال و {abs(months_diff)} ماه"
+                    diff_text = f"{abs(years_diff)} سال و {abs(months_diff)} ماه"
                     if years_diff < 0 or (years_diff == 0 and months_diff < 0) :
-                        output_str += " (تاریخ دوم کوچکتر از تاریخ اول است)"
-                    results_to_display.append(f"✅ {output_str}")
-                else:
-                    results_to_display.append(f"❌ خط {i+1} (`{line}`): {result}")
-            else:
-                results_to_display.append(f"⚠️ خط {i+1}: فرمت ورودی نامعتبر است ('{line}'). باید دو تاریخ جدا شده با کاما باشد.")
-
-        for res_line in results_to_display:
-            if "✅" in res_line:
-                st.success(res_line)
-            elif "❌" in res_line:
-                st.error(res_line)
-            else:
-                st.warning(res_line)
+                        diff_text += " (تاریخ دوم کوچکتر از تاریخ اول است)"
+                    all_results_text_lines.append(f"خط {i+1} «{original_line_for_display}»: {diff_text}")
+                else: # این به معنی این است که تابع محاسبه یک رشته خطا برگردانده
+                    all_results_text_lines.append(f"خط {i+1} «{original_line_for_display}»: {result}")
+            else: # خطا در پارس کردن خط (نبودن دو تاریخ جدا شده با کاما)
+                all_results_text_lines.append(f"خط {i+1} «{original_line_for_display}»: خطا در فرمت خط. باید دو تاریخ جدا شده با کاما باشد.")
+        
+        if all_results_text_lines:
+            st.subheader("نتایج کلی")
+            st.markdown("---")
+            final_output_block = "\n".join(all_results_text_lines)
+            st.code(final_output_block, language=None) # نمایش به صورت یک بلوک متنی
+        elif input_text.strip(): # اگر ورودی داده شده بود اما هیچ خط قابل پردازشی یافت نشد
+            st.info("داده وارد شده، اما هیچ خط معتبری برای پردازش یافت نشد.")
+        # اگر input_text.strip() خالی بود، هشدار اولیه قبلا نمایش داده شده است.
 
 st.markdown("---")
 st.markdown("ساخته شده با پایتون و Streamlit")
