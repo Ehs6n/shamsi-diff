@@ -2,6 +2,8 @@ import streamlit as st
 import jdatetime
 from dateutil.relativedelta import relativedelta
 
+st.set_page_config(layout="wide", page_title="محاسبه‌گر اختلاف تاریخ شمسی")
+
 # تابع اصلی محاسبه اختلاف تاریخ بدون تغییر باقی می‌ماند
 def calculate_shamsi_date_difference(date_str1, date_str2):
     """
