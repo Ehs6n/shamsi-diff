@@ -61,10 +61,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# --- رابط کاربری Streamlit ---
-st.set_page_config(layout="wide", page_title="محاسبه‌گر اختلاف تاریخ شمسی")
-
 st.title("محاسبه‌گر اختلاف دو تاریخ شمسی")
 st.markdown("این برنامه اختلاف بین دو تاریخ شمسی را بر حسب سال و ماه برای هر خط ورودی محاسبه می‌کند.")
 
